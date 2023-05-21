@@ -1,37 +1,29 @@
-"""
-The embdeer module.
+"""The embdeer module.
 The embedder generates vectors for sentences.
 Those embeddings are then used for searching the vector DB,
 which is not yet ready
 """
 
-import torch
 from typing import AsyncIterable, AsyncIterator, Iterable, Iterator
-from .tokenizer import Tokenizer
-from .vector import Vectorizer
+
+from sentence_transformers import SentenceTransformer, util
+import torch
 
 
 class Embedder:
-    """
-    The embedder class.
+    """The embedder class."""
 
-
-    """
-
-    def __init__(self, checkpoint: str = "roberta-base"):
-        """
-        Init for the embedder class
+    def __init__(self, checkpoint: str = "sentence-transformers/all-roberta-large-v1"):
+        """Init for the embedder class
 
         Args:
             checkpoint - the model checkpoint name.
         """
 
-        self.tokenizer = Tokenizer(checkpoint)
-        self.vectorizer = Vectorizer(checkpoint)
+        self.model = SentenceTransformer(checkpoint)
 
     def sentence_into_vector(self, sentence: str) -> torch.Tensor:
-        """
-        Vectorize a single sentence
+        """Vectorize a single sentence
 
         Args:
             sentence: str - the sentence
@@ -40,15 +32,12 @@ class Embedder:
             torch.Tensor - the vector representing the sentence
         """
 
-        return self.vectorizer.vectorize(
-            self.tokenizer.tokens_from_str(sentence)
-        )
+        return self.model.encode(sentence)
 
-    def sentence_list_into_vectors(
+    def sentence_iter_into_vectors(
         self, sentences: Iterable[str]
     ) -> Iterator[torch.Tensor]:
-        """
-        Vectorize a single sentence
+        """Vectorize an iterable
 
         Args:
             sentence: Iterable[str] - the sentence iterable
@@ -57,15 +46,25 @@ class Embedder:
             Iterator[torch.Tensor] - the vector iterator representing the sentences
         """
         for sentence in sentences:
-            yield self.vectorizer.vectorize(
-                self.tokenizer.tokens_from_str(sentence)
-            )
+            yield self.model.encode(sentence)
+
+    def sentence_list_into_vectors(self, sentences: list[str]) -> list[torch.Tensor]:
+        """Vectorize a list of sentences
+        NOTE: does not work
+
+        Args:
+            sentences: list[str] - the sentence list
+
+        Returns:
+            list[torch.Tensor] - the list of embeddings
+        """
+        # TODO: make this work
+        return self.model.encode(sentences)
 
     async def sentence_list_into_vectors_async(
         self, sentences: AsyncIterable[str]
     ) -> AsyncIterator[torch.Tensor]:
-        """
-        Vectorize a single sentence
+        """Vectorize a single sentence
 
         Args:
             sentence: AsyncIterable[str] - the sentence iterable
@@ -74,6 +73,4 @@ class Embedder:
             AsyncIterator[torch.Tensor] - the vector iterator representing the sentences
         """
         async for sentence in sentences:
-            yield self.vectorizer.vectorize(
-                self.tokenizer.tokens_from_str(sentence)
-            )
+            yield self.model.encode(sentence)
